@@ -11,7 +11,7 @@ class DB private( val driver: String,
                   val username: String,
                   val password: String ) {
   implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
-  val transactor = Transactor.fromDriverManager[IO](
+  val transactor = Transactor.fromDriverManager[ConnectionIO](
     driver,
     url,
     username,
