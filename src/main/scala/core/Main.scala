@@ -92,8 +92,12 @@ object Main extends IOApp with StrictLogging {
         }
     case req @ POST -> Root / "user" =>
       req.as[User] flatMap ( user => {
-        val conInt: IO[Int] = UserModel.insertUser(user).transact(transactor)
-        Ok(s"user found ${conInt} ${user.username}, ${user.email}, ${user.passwordHash}")
+        UserModel.insertUser(user)
+          .transact(transactor).flatMap {
+          case res => Created("User was Created")
+//          case _ => Conflict("db constraint violated")
+        }
+
       })
 
 

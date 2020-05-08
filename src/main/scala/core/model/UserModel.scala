@@ -30,8 +30,8 @@ object UserModel {
   def findById(id: Int): ConnectionIO[Option[User]] = findBy(fr"id = ${id}")
 
   def insertUser(user: User):ConnectionIO[Int] = {
-    sql"""INSERT INTO PUBLIC.USER (ID, USERNAME, EMAIL, PASSWORD, IS_ACTIVE, DOB)
-         | VALUES (${user.id}, ${user.username}, ${user.email}, ${user.passwordHash}, ${user.isActive}, ${user.dob})"""
+    sql"""INSERT INTO PUBLIC.USER (USERNAME, EMAIL, PASSWORD_HASH, IS_ACTIVE, DOB)
+         | VALUES (${user.username}, ${user.email}, ${user.passwordHash}, ${user.isActive}, ${user.dob})"""
       .stripMargin.update.run
   }
 
