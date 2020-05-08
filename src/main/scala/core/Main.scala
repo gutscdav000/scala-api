@@ -96,7 +96,7 @@ object Main extends IOApp with StrictLogging {
           .transact(transactor).flatMap {
           case res => Created("User was Created")
 //          case _ => Conflict("db constraint violated")
-        }
+        }.exceptSomeSqlState(UNIQUE_VIOLATION => Conflict())
 
       })
 
