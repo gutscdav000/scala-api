@@ -28,11 +28,23 @@ final case class User(
 
 object UserModel {
   def findById(id: Int): ConnectionIO[Option[User]] = findBy(fr"id = ${id}")
+  def findByEmail(email: String): ConnectionIO[Option[User]] = findBy(fr"email = ${email}")
+  def findByUsername(username: String): ConnectionIO[Option[User]] = findBy(fr"username = ${username}")
 
   def insertUser(user: User):ConnectionIO[Int] = {
     sql"""INSERT INTO PUBLIC.USER (USERNAME, EMAIL, PASSWORD_HASH, IS_ACTIVE, DOB)
          | VALUES (${user.username}, ${user.email}, ${user.passwordHash}, ${user.isActive}, ${user.dob})"""
       .stripMargin.update.run
+  }
+
+  def updateUser(user: User): ConnectionIO[Int] = {
+    sql"""UPDATE PUBLIC.USER
+         |SET USERNAME = ${user.username},
+         |EMAIL = ${user.email},
+         |PASSWORD_HASH = ${user.passwordHash},
+         |IS_ACTIVE = ${user.isActive},
+         |DOB = ${user.dob}
+         |where ID = ${user.id}""".stripMargin.update.run
   }
 
   private def findBy(by: Fragment): ConnectionIO[Option[User]] =

@@ -5,6 +5,7 @@ import cats.data
 import cats.effect._
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
+import doobie.util.update.Update
 //import org.http4s.circe.jsonOf
 import org.http4s.server.blaze._
 // custom
@@ -95,28 +96,15 @@ object Main extends IOApp with StrictLogging {
         UserModel.insertUser(user)
           .transact(transactor).flatMap {
           case res => Created("User was Created")
-//          case _ => Conflict("db constraint violated")
         }.exceptSomeSqlState(UNIQUE_VIOLATION => Conflict())
-
       })
-
-
-
-//      implicit val userDecoder: Decoder[User] = deriveDecoder[User]
-//      implicit def jsonDecoder[A: Decoder]: EntityDecoder[IO, A] = jsonOf[IO, A]
-//                      parser.decode(req.body.asJson) match {
-//                        case Right(user) => Ok("we decoded the json")
-//                        case Left(err) => BadRequest(err.toString)
-//                      }
-//      match {
-//        case Left(failure) => BadRequest(failure.toString)
-//        case Right(json) => Ok(json)
-//      }
-//      req.decodeJson[User] flatMap {(up: User) =>
-//        Ok(UserModel.insertUser(up).asJson)
-//      }
-//      req.decode[User] { data => Ok(data) }
-
+    case req @ PUT -> Root / "user" =>
+      req.as[User] flatMap ( user => {
+        UserModel.updateUser(user)
+          .transact(transactor).flatMap{
+          case res => Ok(s"user ${user.username} udpated")
+        }.exceptSomeSqlState(err => InternalServerError(s"an error occured: ${err}"))
+      })
   }.orNotFound
 
 
