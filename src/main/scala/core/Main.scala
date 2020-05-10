@@ -2,6 +2,8 @@ package core
 package core.fp
 
 // custom
+import java.util.Date
+
 import model.UserModel
 import model.User
 import service.UserService
@@ -53,16 +55,13 @@ object Main extends IOApp with StrictLogging {
     case GET -> Root / "hello" / name =>
       logger.debug("***hello world service***")
       Ok(s"Hello, $name.")
-    case GET -> Root / "user" / IntVar(id) =>
-      UserModel.findById(id)
-        .transact(transactor)
-        .flatMap { userOption =>
-          Ok(s"userOption is instance of: ${userOption.getClass} object: ${userOption.toString}")
-        }
+    case GET -> Root / "user" / IntVar(id) => UserService(User(id,"","","",true,new Date())).getById(id, transactor)
     case req @ POST -> Root / "user" =>
       req.as[User] flatMap ( user => UserService(user).insert(transactor))
     case req @ PUT -> Root / "user" =>
       req.as[User] flatMap ( user => UserService(user).update(transactor))
+    case req @ DELETE -> Root / "user" =>
+      req.as[User] flatMap( user => UserService(user).delete(transactor))
   }.orNotFound
 
 

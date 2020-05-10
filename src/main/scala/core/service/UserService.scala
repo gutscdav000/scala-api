@@ -12,6 +12,13 @@ import org.http4s.Response
 
 class UserService(val user: User) {
 
+  def getById(id: Int, transactor: Transactor[IO]): IO[Response[IO]]  = {
+    UserModel.findById(id, transactor) match {
+      case Some(user) => Ok(s"userOption is instance of: ${user.getClass} object: ${user.toString}")
+      case None => NotFound(s"User Not Found.")
+    }
+  }
+
   def insert(transactor: Transactor[IO]): IO[Response[IO]] = {
     UserModel.insertUser(user, transactor) match {
       case Right(u) => Created(s"User: ${user.username}, ${user.email} created.")
@@ -30,6 +37,13 @@ class UserService(val user: User) {
           case Right(user) => Ok(s"user: ${user.email} updated.")
         }
       }
+    }
+  }
+
+  def delete(transactor: Transactor[IO]): IO[Response[IO]] = {
+    UserModel.deleteUser(user, transactor) match {
+      case Left(exception) => Gone(s"resource gone: ${exception}")
+      case Right(user) => Ok(s"user: ${user.email}, ${user.username} deleted.")
     }
   }
 

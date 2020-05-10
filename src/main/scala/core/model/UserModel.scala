@@ -10,6 +10,7 @@ import doobie.postgres.implicits._
 import doobie.util.meta.Meta
 import doobie.util.transactor
 import doobie.util.transactor.Transactor
+import org.omg.CosNaming.NamingContextPackage.NotFound
 import tsec.common.VerificationStatus
 import tsec.passwordhashers.PasswordHash
 import tsec.passwordhashers.jca.SCrypt
@@ -28,20 +29,24 @@ final case class User(
 //  }
 //  def verifyPassword(password: String) : VerificationStatus = SCrypt.checkpw[cats.Id](password, passwordHash)
 }
+import scala.{None, Nothing}
 
 object UserModel {
-  def findById(id: Int): ConnectionIO[Option[User]] = findBy(fr"id = ${id}")
+  def findById(id: Int, transactor: Transactor[IO]): Option[User] = {
+    findBy(fr"id = ${id}", transactor)
+  }
   def findByEmail(email: String, transactor: Transactor[IO]): Either[Throwable, User] = {
     try {
-      val user: User = findBy(fr"email = ${email}")
-        .transact(transactor).unsafeRunSync().get
+      val user: User = findBy(fr"email = ${email}", transactor).get
       Right(user)
     } catch {
       case exception: Throwable => Left(exception)
     }
   }
 
-  def findByUsername(username: String): ConnectionIO[Option[User]] = findBy(fr"username = ${username}")
+  def findByUsername(username: String, transactor: Transactor[IO]): Option[User] = {
+    findBy(fr"username = ${username}", transactor)
+  }
 
   def insertUser(user: User, transactor: Transactor[IO]): Either[Throwable, User] = {
     try {
@@ -73,8 +78,24 @@ object UserModel {
     }
   }
 
-  private def findBy(by: Fragment): ConnectionIO[Option[User]] =
+  def deleteUser(user: User, transactor: Transactor[IO]): Either[Throwable, User] = {
+    try {
+      findBy(fr"USERNAME = ${user.username} AND EMAIL = ${user.email}", transactor) match {
+        case Some(u) => u
+        case None => throw new IllegalArgumentException("record not found")
+      }
+      sql"""DELETE FROM PUBLIC.USER
+           |WHERE USERNAME = ${user.username} AND ${user.email}""".stripMargin
+      Right(user)
+    } catch {
+      case exception: Throwable => Left(exception)
+    }
+  }
+
+  private def findBy(by: Fragment, transactor: Transactor[IO]): Option[User] =
     (sql"SELECT id, username, email, password_hash, is_active, dob FROM public.user WHERE " ++ by)
       .query[User]
       .option
+      .transact(transactor)
+      .unsafeRunSync()
 }
