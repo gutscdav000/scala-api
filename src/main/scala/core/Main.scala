@@ -2,10 +2,12 @@ package core
 package core.fp
 
 // custom
-import java.util.Date
-
 import model.UserModel
 import model.User
+import serializer.UserSerializer
+
+import java.util.Date
+import org.json4s.JsonAST.JValue
 import service.UserService
 // libraries
 import com.typesafe.scalalogging.StrictLogging
@@ -42,19 +44,16 @@ object Main extends IOApp with StrictLogging {
 //    }
 //  }
 
+  // *** USER JSON DECODER ***
   // create a json4s Reader[User]
-  implicit val formats = DefaultFormats
-  implicit val fooReader = new Reader[User] {
+  implicit val formats = DefaultFormats + UserSerializer()
+  implicit val userReader = new Reader[User] {
     def read(value: JValue): User = value.extract[User]
   }
   // create a http4s EntityDecoder[User] (which uses the Reader)
   implicit val userDec = jsonOf[IO, User] // only had 1 type param originally
 
-//  implicit lazy val userDecoder = deriveDecoder[User]
   def httpRoutes(transactor: Transactor[cats.effect.IO]) = HttpRoutes.of[IO] {
-    case GET -> Root / "hello" / name =>
-      logger.debug("***hello world service***")
-      Ok(s"Hello, $name.")
     case GET -> Root / "user" / IntVar(id) => UserService(User(id,"","","",true,new Date())).getById(id, transactor)
     case req @ POST -> Root / "user" =>
       req.as[User] flatMap ( user => UserService(user).insert(transactor))

@@ -38,6 +38,8 @@ libraryDependencies ++= Seq(
   "org.http4s" % "http4s-json4s-jackson_2.13" % http4sVersion,
   "org.http4s" % "http4s-json4s_2.13" % http4sVersion,
   "io.circe" % "circe-derivation_2.13" % "0.13.0-M4",
+  "org.json4s" % "json4s-native_2.13" % "3.7.0-M4",
+//  "joda-time" % "joda-time" % "2.10.6",
   scalaTest
 )
 

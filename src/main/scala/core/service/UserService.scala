@@ -1,20 +1,27 @@
 package core.service
 
-import cats.effect.IO
+//custom
 import core.model.{User, UserModel}
+import core.serializer.UserSerializer
+
 import org.http4s.dsl.io.{Conflict, Created, _}
 import doobie.{ConnectionIO, Fragment, Transactor}
 import cats.effect.IO
 import org.http4s.Response
-///////
+import org.json4s._
+import org.json4s.jackson.Serialization.write
+import JsonDSL._
 
 
 
 class UserService(val user: User) {
 
+  // *** USER JSON ENCODER ***
+  implicit val formats = DefaultFormats + UserSerializer()
+
   def getById(id: Int, transactor: Transactor[IO]): IO[Response[IO]]  = {
     UserModel.findById(id, transactor) match {
-      case Some(user) => Ok(s"userOption is instance of: ${user.getClass} object: ${user.toString}")
+      case Some(user) => Ok(write[User](user))
       case None => NotFound(s"User Not Found.")
     }
   }
