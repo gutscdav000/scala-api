@@ -1,56 +1,23 @@
 package core
 package core.fp
 
-import cats.data
-import cats.effect._
-import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
-import doobie.util.update.Update
-//import org.http4s.circe.jsonOf
-import org.http4s.server.blaze._
 // custom
-import model.DB
 import model.UserModel
 import model.User
-import java.util.Date
-import cats.effect.IO
+import service.UserService
+// libraries
+import com.typesafe.scalalogging.StrictLogging
+import org.http4s.server.blaze._
+import org.http4s.HttpRoutes
+import org.http4s.syntax.kleisli._
+import org.http4s.dsl.io._
+import org.http4s.json4s.jackson._
+import org.json4s._
 import doobie.{ConnectionIO, Fragment, Transactor}
 import doobie.implicits._
-import org.http4s.HttpRoutes
-import org.http4s.dsl.io._
-import org.http4s.syntax.kleisli._
-//import org.http4s.circe._
-// new
 import cats.effect._
-//import io.circe._
-//import io.circe.literal._
-import org.http4s._
-import org.http4s.dsl.io._
-//import io.circe.syntax._
-//import io.circe.generic.auto._
-//import org.http4s.circe.CirceEntityEncoder._
-//import org.http4s.circe.CirceEntityDecoder._
-// new new
-//import io.circe.parser
-//import io.circe.generic.semiauto.deriveDecoder
-//import io.circe.derivation.deriveDecoder
-// new new new
 import cats.effect.IO
-//import io.circe.generic.semiauto._
-//import io.circe.syntax._
-//import io.circe.{Decoder, Encoder}
-//import org.http4s.circe._
-import org.http4s.client.blaze._
-import org.http4s.client.dsl.io._
-import org.http4s.dsl.io._
-// new new new new
-import org.json4s._
-import org.json4s.jackson.JsonMethods._
 
-import org.http4s._
-import org.http4s.dsl._
-import org.http4s.json4s.jackson._
-import scala.{None, Nothing}
 
 object Main extends IOApp with StrictLogging {
 
@@ -93,26 +60,9 @@ object Main extends IOApp with StrictLogging {
           Ok(s"userOption is instance of: ${userOption.getClass} object: ${userOption.toString}")
         }
     case req @ POST -> Root / "user" =>
-      req.as[User] flatMap ( user => {
-        UserModel.insertUser(user)
-          .transact(transactor).flatMap {
-          case res => Created("User was Created")
-        }.exceptSomeSqlState(UNIQUE_VIOLATION => Conflict())
-      })
+      req.as[User] flatMap ( user => UserService(user).insert(transactor))
     case req @ PUT -> Root / "user" =>
-      req.as[User] flatMap ( user => {
-        val dbUser: Either[Throwable, User] = UserModel.findByEmail(user.email, transactor)
-
-        dbUser match {
-          case Left(e) => NotFound(s"User: ${user.email} not found. Error: ${e}")
-          case Right(u) => {
-              UserModel.updateUser(u, transactor) match {
-                case Left(exception) => InternalServerError(s"error: ${exception}")
-                case Right(user) => Ok(s"user: ${user.email} updated.")
-              }
-          }
-        }
-      })
+      req.as[User] flatMap ( user => UserService(user).update(transactor))
   }.orNotFound
 
 

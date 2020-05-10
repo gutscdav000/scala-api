@@ -8,6 +8,7 @@ import doobie.util.fragment.Fragment
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.meta.Meta
+import doobie.util.transactor
 import doobie.util.transactor.Transactor
 import tsec.common.VerificationStatus
 import tsec.passwordhashers.PasswordHash
@@ -42,10 +43,17 @@ object UserModel {
 
   def findByUsername(username: String): ConnectionIO[Option[User]] = findBy(fr"username = ${username}")
 
-  def insertUser(user: User):ConnectionIO[Int] = {
-    sql"""INSERT INTO PUBLIC.USER (USERNAME, EMAIL, PASSWORD_HASH, IS_ACTIVE, DOB)
-         | VALUES (${user.username}, ${user.email}, ${user.passwordHash}, ${user.isActive}, ${user.dob})"""
-      .stripMargin.update.run
+  def insertUser(user: User, transactor: Transactor[IO]): Either[Throwable, User] = {
+    try {
+      sql"""INSERT INTO PUBLIC.USER (USERNAME, EMAIL, PASSWORD_HASH, IS_ACTIVE, DOB)
+           | VALUES (${user.username}, ${user.email}, ${user.passwordHash}, ${user.isActive}, ${user.dob})"""
+        .stripMargin.update.run
+        .transact(transactor)
+        .unsafeRunSync()
+      Right(user)
+    } catch {
+      case exception: Throwable => Left(exception)
+    }
   }
 
   def updateUser(user: User, transactor: Transactor[IO]): Either[Throwable, User] = {
