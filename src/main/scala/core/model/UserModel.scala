@@ -2,11 +2,13 @@ package core.model
 
 import java.util.Date
 
+import cats.effect.IO
 import doobie.free.connection.ConnectionIO
 import doobie.util.fragment.Fragment
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.meta.Meta
+import doobie.util.transactor.Transactor
 import tsec.common.VerificationStatus
 import tsec.passwordhashers.PasswordHash
 import tsec.passwordhashers.jca.SCrypt
@@ -28,7 +30,16 @@ final case class User(
 
 object UserModel {
   def findById(id: Int): ConnectionIO[Option[User]] = findBy(fr"id = ${id}")
-  def findByEmail(email: String): ConnectionIO[Option[User]] = findBy(fr"email = ${email}")
+  def findByEmail(email: String, transactor: Transactor[IO]): Either[Throwable, User] = {
+    try {
+      val user: User = findBy(fr"email = ${email}")
+        .transact(transactor).unsafeRunSync().get
+      Right(user)
+    } catch {
+      case exception: Throwable => Left(exception)
+    }
+  }
+
   def findByUsername(username: String): ConnectionIO[Option[User]] = findBy(fr"username = ${username}")
 
   def insertUser(user: User):ConnectionIO[Int] = {
@@ -37,14 +48,21 @@ object UserModel {
       .stripMargin.update.run
   }
 
-  def updateUser(user: User): ConnectionIO[Int] = {
-    sql"""UPDATE PUBLIC.USER
-         |SET USERNAME = ${user.username},
-         |EMAIL = ${user.email},
-         |PASSWORD_HASH = ${user.passwordHash},
-         |IS_ACTIVE = ${user.isActive},
-         |DOB = ${user.dob}
-         |where ID = ${user.id}""".stripMargin.update.run
+  def updateUser(user: User, transactor: Transactor[IO]): Either[Throwable, User] = {
+    try {
+      sql"""UPDATE PUBLIC.USER
+           |SET USERNAME = ${user.username},
+           |EMAIL = ${user.email},
+           |PASSWORD_HASH = ${user.passwordHash},
+           |IS_ACTIVE = ${user.isActive},
+           |DOB = ${user.dob}
+
+           |where ID = ${user.id}""".stripMargin.update.run
+        .transact(transactor).unsafeRunSync()
+      Right(user)
+      } catch {
+      case exception: Throwable => Left(exception)
+    }
   }
 
   private def findBy(by: Fragment): ConnectionIO[Option[User]] =

@@ -50,6 +50,7 @@ import org.json4s.jackson.JsonMethods._
 import org.http4s._
 import org.http4s.dsl._
 import org.http4s.json4s.jackson._
+import scala.{None, Nothing}
 
 object Main extends IOApp with StrictLogging {
 
@@ -100,10 +101,17 @@ object Main extends IOApp with StrictLogging {
       })
     case req @ PUT -> Root / "user" =>
       req.as[User] flatMap ( user => {
-        UserModel.updateUser(user)
-          .transact(transactor).flatMap{
-          case res => Ok(s"user ${user.username} udpated")
-        }.exceptSomeSqlState(err => InternalServerError(s"an error occured: ${err}"))
+        val dbUser: Either[Throwable, User] = UserModel.findByEmail(user.email, transactor)
+
+        dbUser match {
+          case Left(e) => NotFound(s"User: ${user.email} not found. Error: ${e}")
+          case Right(u) => {
+              UserModel.updateUser(u, transactor) match {
+                case Left(exception) => InternalServerError(s"error: ${exception}")
+                case Right(user) => Ok(s"user: ${user.email} updated.")
+              }
+          }
+        }
       })
   }.orNotFound
 
