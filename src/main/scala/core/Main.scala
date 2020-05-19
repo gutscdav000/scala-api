@@ -32,18 +32,6 @@ object Main extends IOApp with StrictLogging {
     "postgres"
   )
 
-//  val userJsonEncoder: Encoder[User] = {
-//    Encoder.instance { user: User =>
-//    json"""{
-//          |	"username": ${user.username},
-//          |	"email": ${user.email},
-//          |	"password": ${user.passwordHash},
-//          |	"is_active": ${user.isActive},
-//          |	"dob": ${user.dob}
-//          |}""".stripMargin
-//    }
-//  }
-
   // *** USER JSON DECODER ***
   // create a json4s Reader[User]
   implicit val formats = DefaultFormats + UserSerializer()
@@ -54,6 +42,7 @@ object Main extends IOApp with StrictLogging {
   implicit val userDec = jsonOf[IO, User] // only had 1 type param originally
 
   def httpRoutes(transactor: Transactor[cats.effect.IO]) = HttpRoutes.of[IO] {
+        // USER Routes
     case GET -> Root / "user" / IntVar(id) => UserService(User(id,"","","",true,new Date())).getById(id, transactor)
     case req @ POST -> Root / "user" =>
       req.as[User] flatMap ( user => UserService(user).insert(transactor))
