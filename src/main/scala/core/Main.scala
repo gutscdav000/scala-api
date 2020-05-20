@@ -39,7 +39,7 @@ object Main extends IOApp with StrictLogging {
     def read(value: JValue): User = value.extract[User]
   }
   // create a http4s EntityDecoder[User] (which uses the Reader)
-  implicit val userDec = jsonOf[IO, User] // only had 1 type param originally
+  implicit val userDec = jsonOf[IO, User]
 
   def httpRoutes(transactor: Transactor[cats.effect.IO]) = HttpRoutes.of[IO] {
         // USER Routes
