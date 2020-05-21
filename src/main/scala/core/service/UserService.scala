@@ -1,16 +1,14 @@
 package core.service
 
-//custom
 import core.model.{User, UserModel}
 import core.serializer.UserSerializer
 
 import org.http4s.dsl.io.{Conflict, Created, _}
-import doobie.{ConnectionIO, Fragment, Transactor}
+import doobie.{ Transactor }
 import cats.effect.IO
 import org.http4s.Response
 import org.json4s._
 import org.json4s.jackson.Serialization.write
-import JsonDSL._
 
 
 
@@ -19,10 +17,10 @@ class UserService(val user: User) {
   // *** USER JSON ENCODER ***
   implicit val formats = DefaultFormats + UserSerializer()
 
-  def getById(id: Int, transactor: Transactor[IO]): IO[Response[IO]]  = {
-    UserModel.findById(id, transactor) match {
-      case Some(user) => Ok(write[User](user))
-      case None => NotFound(s"User Not Found.")
+  def getByUsername(username: String, transactor: Transactor[IO]): IO[Response[IO]]  = {
+    UserModel.findByUsername(username, transactor) match {
+      case Right(user) => Ok(write[User](user))
+      case Left(err) => NotFound(s"User Not Found.")
     }
   }
 
@@ -34,14 +32,14 @@ class UserService(val user: User) {
   }
 
   def update(transactor: Transactor[IO]): IO[Response[IO]] = {
-    val dbUser: Either[Throwable, User] = UserModel.findByEmail(user.email, transactor)
+    val dbUser: Either[Throwable, User] = UserModel.findByUsername(user.username, transactor)
 
     dbUser match {
-      case Left(e) => NotFound(s"User: ${user.email} not found. Error: ${e}")
+      case Left(e) => NotFound(s"User: ${user.username} not found. Error: ${e}")
       case Right(u) => {
-        UserModel.updateUser(u, transactor) match {
+        UserModel.updateUser(user, transactor) match {
           case Left(exception) => InternalServerError(s"error: ${exception}")
-          case Right(user) => Ok(s"user: ${user.email} updated.")
+          case Right(user) => Ok(s"user: ${user.username} updated.")
         }
       }
     }

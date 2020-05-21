@@ -2,24 +2,22 @@ package core.serializer
 
 import core.model.User
 
-import org.json4s.{CustomSerializer, JBool, JInt, JString}
+import org.json4s.{CustomSerializer, JBool, JString}
 import org.json4s._
 import JsonDSL._
 import java.text.SimpleDateFormat
 
 class UserSerializer extends CustomSerializer[User](format => ( {
     case JObject(
-    JField("id", JInt(id)) ::
       JField("username", JString(username)) ::
       JField("email", JString(email)) ::
       JField("passwordHash", JString(passwordHash)) ::
       JField("isActive", JBool(isActive)) ::
       JField("dob", JString(dob)) ::
       Nil
-    ) => User(id.intValue, username, email, passwordHash, isActive, new SimpleDateFormat("yyyy-MM-dd").parse(dob))
+    ) => User( username, email, passwordHash, isActive, new SimpleDateFormat("yyyy-MM-dd").parse(dob))
   }, {
     case x: User =>
-      ("id" -> JInt(x.id)) ~
         ("username"-> JString(x.username)) ~
         ("email", JString(x.email)) ~
         ("isActive", JBool(x.isActive)) ~

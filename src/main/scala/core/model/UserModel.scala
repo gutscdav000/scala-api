@@ -1,22 +1,12 @@
 package core.model
 
 import java.util.Date
-
 import cats.effect.IO
-import doobie.free.connection.ConnectionIO
 import doobie.util.fragment.Fragment
 import doobie.implicits._
-import doobie.postgres.implicits._
-import doobie.util.meta.Meta
-import doobie.util.transactor
 import doobie.util.transactor.Transactor
-import org.omg.CosNaming.NamingContextPackage.NotFound
-import tsec.common.VerificationStatus
-import tsec.passwordhashers.PasswordHash
-import tsec.passwordhashers.jca.SCrypt
 
 final case class User(
-                       id: Int,
                        username: String,
                        email: String,
                        passwordHash: String,//Meta[PasswordHash[SCrypt]],
@@ -29,12 +19,10 @@ final case class User(
 //  }
 //  def verifyPassword(password: String) : VerificationStatus = SCrypt.checkpw[cats.Id](password, passwordHash)
 }
-import scala.{None, Nothing}
+
 
 object UserModel {
-  def findById(id: Int, transactor: Transactor[IO]): Option[User] = {
-    findBy(fr"id = ${id}", transactor)
-  }
+
   def findByEmail(email: String, transactor: Transactor[IO]): Either[Throwable, User] = {
     try {
       val user: User = findBy(fr"email = ${email}", transactor).get
@@ -44,8 +32,13 @@ object UserModel {
     }
   }
 
-  def findByUsername(username: String, transactor: Transactor[IO]): Option[User] = {
-    findBy(fr"username = ${username}", transactor)
+  def findByUsername(username: String, transactor: Transactor[IO]): Either[Throwable, User] = {
+    try {
+      val user: User = findBy(fr"username = ${username}", transactor).get
+      Right(user)
+    } catch {
+      case exception: Throwable => Left(exception)
+    }
   }
 
   def insertUser(user: User, transactor: Transactor[IO]): Either[Throwable, User] = {
@@ -64,14 +57,16 @@ object UserModel {
   def updateUser(user: User, transactor: Transactor[IO]): Either[Throwable, User] = {
     try {
       sql"""UPDATE PUBLIC.USER
-           |SET USERNAME = ${user.username},
-           |EMAIL = ${user.email},
+           |SET EMAIL = ${user.email},
            |PASSWORD_HASH = ${user.passwordHash},
            |IS_ACTIVE = ${user.isActive},
            |DOB = ${user.dob}
-
-           |where ID = ${user.id}""".stripMargin.update.run
-        .transact(transactor).unsafeRunSync()
+           |where USERNAME = ${user.username}"""
+        .stripMargin
+        .update
+        .run
+        .transact(transactor)
+        .unsafeRunSync
       Right(user)
       } catch {
       case exception: Throwable => Left(exception)
@@ -84,8 +79,15 @@ object UserModel {
         case Some(u) => u
         case None => throw new IllegalArgumentException("record not found")
       }
+
       sql"""DELETE FROM PUBLIC.USER
-           |WHERE USERNAME = ${user.username} AND ${user.email}""".stripMargin
+           |WHERE USERNAME = ${user.username} AND EMAIL =  ${user.email}"""
+        .stripMargin
+        .update
+        .run
+        .transact(transactor)
+        .unsafeRunSync
+
       Right(user)
     } catch {
       case exception: Throwable => Left(exception)
@@ -93,7 +95,7 @@ object UserModel {
   }
 
   private def findBy(by: Fragment, transactor: Transactor[IO]): Option[User] =
-    (sql"SELECT id, username, email, password_hash, is_active, dob FROM public.user WHERE " ++ by)
+    (sql"SELECT username, email, password_hash, is_active, dob FROM public.user WHERE " ++ by)
       .query[User]
       .option
       .transact(transactor)
