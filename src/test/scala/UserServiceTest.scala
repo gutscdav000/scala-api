@@ -1,10 +1,11 @@
 import java.text.SimpleDateFormat
+
 import cats.effect.IO
-import core.model.User
+import core.model.{User, UserModel}
 import core.service.UserService
 import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
-import io.circe.{ Json }
+import io.circe.Json
 import org.http4s.circe._
 import org.http4s.{EntityDecoder, Response, Status}
 import org.scalatest.FunSuite
@@ -33,10 +34,11 @@ class UserServiceTest extends FunSuite {
     statusCheck && bodyCheck
   }
 
-  test("UserService.getById Positive") {
+  test("UserService.getByUsername Positive") {
     val dob = new SimpleDateFormat("yyyy-MM-dd").parse("1996-02-08")
-    val user = User("gutscdav000", "gutscdav000@gmail.com", "pass", true, dob)
+    val user = User(1, "gutscdav000", "gutscdav000@gmail.com", "pass", true, dob)
     val expectedJson = Json.obj(
+      ("id",  Json.fromBigInt(user.id)),
       ("username",  Json.fromString(user.username)),
       ("email", Json.fromString(user.email)),
       ("isActive", Json.fromBoolean(user.isActive)),
@@ -47,9 +49,9 @@ class UserServiceTest extends FunSuite {
     assert(check(userResp, Status.Ok, Some(expectedJson)))
   }
 
-  test("UserService.getById Negative") {
+  test("UserService.getByUsername Negative") {
     val dob = new SimpleDateFormat("yyyy-MM-dd").parse("1996-02-08")
-    val user = User("nonexistentUser", "nonexistentUser@gmail.com", "pass", true, dob)
+    val user = User(9999999, "nonexistentUser", "nonexistentUser@gmail.com", "pass", true, dob)
 
     val userResp = UserService(user).getByUsername(user.username, transactor)
     assert(userResp.unsafeRunSync.status == Status.NotFound)
@@ -57,27 +59,30 @@ class UserServiceTest extends FunSuite {
 
   test("UserService.insert Success") {
     val newUser = User(
+      9,
       "test_user",
       "test_user@email.com",
       "test_pass",
       true,
       new SimpleDateFormat("yyyy-MM-dd").parse("1955-05-05")
     )
-    val expectedJson = Json.obj(
-      ("username",  Json.fromString(newUser.username)),
-      ("email", Json.fromString(newUser.email)),
-      ("isActive", Json.fromBoolean(newUser.isActive)),
-      ("dob", Json.fromString(new SimpleDateFormat("yyyy-MM-dd").format(newUser.dob)))
-    )
+
     val ret = UserService(newUser).insert(transactor).unsafeRunSync
     assert(ret.status == Status.Created)
 
-    val dbUser = UserService(newUser).getByUsername(newUser.username, transactor)
-    assert(check(dbUser, Status.Ok, Some(expectedJson)))
+    val dbUser: User = UserModel.findByUsername(newUser.username, transactor)
+       match {
+        case Left(err) => throw new Exception("DB error.")
+        case Right(user) => user
+      }
+
+    val compUser = User(dbUser.id, newUser.username, newUser.email, newUser.passwordHash, newUser.isActive, newUser.dob)
+    assert(compUser == dbUser)
   }
 
   test("UserService.insert Fail") {
     val existingUser = User(
+      9,
       "test_user",
       "test_user@email.com",
       "test_pass",
@@ -91,6 +96,7 @@ class UserServiceTest extends FunSuite {
 
   test("UserService.update Success") {
     val existingUser = User(
+      9,
       "test_user",
       "test_user123@email.com",
       "pass_test",
@@ -104,13 +110,14 @@ class UserServiceTest extends FunSuite {
 
   test("UserService.update NotFound") {
     val dob = new SimpleDateFormat("yyyy-MM-dd").parse("1996-02-08")
-    val user = User("nonexistentUser", "nonexistentUser@gmail.com", "pass", true, dob)
+    val user = User(99999, "nonexistentUser", "nonexistentUser@gmail.com", "pass", true, dob)
     val ret = UserService(user).update(transactor).unsafeRunSync
     assert(ret.status == Status.NotFound)
   }
 
   test("UserService.delete Success") {
     val existingUser = User(
+      9,
       "test_user",
       "test_user123@email.com",
       "pass_test",
@@ -126,6 +133,7 @@ class UserServiceTest extends FunSuite {
 
   test("UserService.delete Gone") {
     val deletedUser = User(
+      9,
       "test_user",
       "test_user123@email.com",
       "pass_test",

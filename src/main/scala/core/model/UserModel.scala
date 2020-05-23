@@ -7,6 +7,7 @@ import doobie.implicits._
 import doobie.util.transactor.Transactor
 
 final case class User(
+                       id: Int,
                        username: String,
                        email: String,
                        passwordHash: String,//Meta[PasswordHash[SCrypt]],
@@ -95,7 +96,7 @@ object UserModel {
   }
 
   private def findBy(by: Fragment, transactor: Transactor[IO]): Option[User] =
-    (sql"SELECT username, email, password_hash, is_active, dob FROM public.user WHERE " ++ by)
+    (sql"SELECT id, username, email, password_hash, is_active, dob FROM public.user WHERE " ++ by)
       .query[User]
       .option
       .transact(transactor)

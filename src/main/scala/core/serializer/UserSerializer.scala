@@ -9,15 +9,17 @@ import java.text.SimpleDateFormat
 
 class UserSerializer extends CustomSerializer[User](format => ( {
     case JObject(
+      JField("id", JInt(id)) ::
       JField("username", JString(username)) ::
       JField("email", JString(email)) ::
       JField("passwordHash", JString(passwordHash)) ::
       JField("isActive", JBool(isActive)) ::
       JField("dob", JString(dob)) ::
       Nil
-    ) => User( username, email, passwordHash, isActive, new SimpleDateFormat("yyyy-MM-dd").parse(dob))
+    ) => User( id.toInt, username, email, passwordHash, isActive, new SimpleDateFormat("yyyy-MM-dd").parse(dob))
   }, {
     case x: User =>
+        ("id"-> JInt(x.id)) ~
         ("username"-> JString(x.username)) ~
         ("email", JString(x.email)) ~
         ("isActive", JBool(x.isActive)) ~

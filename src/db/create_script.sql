@@ -1,20 +1,17 @@
 CREATE TABLE public."user"
 (
-    id integer NOT NULL DEFAULT nextval('user_id_seq'::regclass),
-    username character varying(255) COLLATE pg_catalog."default" NOT NULL,
-    email character varying(255) COLLATE pg_catalog."default" NOT NULL,
-    password_hash character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    id serial primary key,
+    username character varying(255) NOT NULL Unique,
+    email character varying(255) NOT NULL Unique,
+    password_hash character varying(255) NOT NULL,
     is_active boolean DEFAULT true,
-    dob date NOT NULL,
-    CONSTRAINT user_pkey PRIMARY KEY (id),
-    CONSTRAINT user_email_key UNIQUE (email),
-    CONSTRAINT user_username_key UNIQUE (username)
+    dob date NOT NULL
 );
 
 create table public.debt_types
 (
 	id serial primary key,
-	type varchar(255) not null unique
+	debt_type varchar(255) not null unique
 );
 
 create table public.debt
@@ -22,7 +19,7 @@ create table public.debt
 	id serial primary key,
 	name varchar(255) not null,
 	user_id Integer references public.user(id),
-	type varchar(255) references public.debt_types(type),
+	debt_type varchar(255) references public.debt_types(debt_type),
 	lender varchar(255),
 	original_balance numeric(13,2),
 	balance numeric(13,2),
@@ -39,7 +36,8 @@ create table public.debt
 	purchase_price numeric(13,2),
 	max_periods Integer,
 	escrow numeric(13,2),
-	max_loc numeric(13,2)
+	max_loc numeric(13,2),
+	constraint debt_constraint unique (name, user_id)
 );
 
 create table public.debt_hist
@@ -47,7 +45,7 @@ create table public.debt_hist
 	id serial primary key,
 	name varchar(255) not null,
 	user_id Integer references public.user(id),
-	type varchar(255) references public.debt_types(type),
+	debt_type varchar(255) references public.debt_types(debt_type),
 	lender varchar(255),
 	original_balance numeric(13,2),
 	balance numeric(13,2),
@@ -67,6 +65,10 @@ create table public.debt_hist
 	max_loc numeric(13,2),
 	update_stamp timestamp
 );
+
+
+insert into public."user"
+ values (1, 'gutscdav000', 'gutscdav000@gmail.com', 'pass', true, '1996-02-08')
 
 
 

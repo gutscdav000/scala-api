@@ -43,13 +43,15 @@ object Main extends IOApp with StrictLogging {
 
   def httpRoutes(transactor: Transactor[cats.effect.IO]) = HttpRoutes.of[IO] {
         // USER Routes
-    case GET -> Root / "user" / username => UserService(User(username,"","",true,new Date())).getByUsername(username, transactor)
+    case GET -> Root / "user" / username => UserService(User(1, username,"","",true,new Date())).getByUsername(username, transactor)
     case req @ POST -> Root / "user" =>
       req.as[User] flatMap ( user => UserService(user).insert(transactor))
     case req @ PUT -> Root / "user" =>
       req.as[User] flatMap ( user => UserService(user).update(transactor))
     case req @ DELETE -> Root / "user" =>
       req.as[User] flatMap( user => UserService(user).delete(transactor))
+      // DEBT Routes
+
   }.orNotFound
 
 
