@@ -8,11 +8,12 @@ CREATE TABLE public."user"
     dob date NOT NULL
 );
 
-create table public.debt_types
+create table public.debt_type
 (
 	id serial primary key,
 	debt_type varchar(255) not null unique
 );
+
 
 create table public.debt
 (
@@ -38,7 +39,8 @@ create table public.debt
 	escrow numeric(13,2),
 	max_loc numeric(13,2),
 	constraint debt_constraint unique (name, user_id)
-);
+);		 
+
 
 create table public.debt_hist
 (
@@ -68,7 +70,20 @@ create table public.debt_hist
 
 
 insert into public."user"
- values (1, 'gutscdav000', 'gutscdav000@gmail.com', 'pass', true, '1996-02-08')
+ values (1, 'gutscdav000', 'gutscdav000@gmail.com', 'pass', true, '1996-02-08');
+
+insert into public.debt_types
+ values (1, 'Mortgage'),
+ 		(2, 'Auto Loan'),
+		(3, 'Student Loan'),
+		(4, 'Credit Card'),
+		(5, 'Line of Credit');
+		
+insert into public.debt
+ values (1, 'david''s mortgage', 1, 'Mortgage', 'Fannie Mae', 200000.0, 200000.0, 0.05, 0.0,
+		360, '2050-05-01', 186343.11, 1074.0, -1.0, 360, 360,-1.0, 250000.0, 360, -1.0, -1.0),
+		(2, 'david''s credit card', 1, 'Credit Card', 'Chase', 0.0, 0.0, 0.18, 0.0, 0, '0001-01-01',
+		 0.0, -1.0, 0.02, -1, -1, -1, -1, -1, -1, -1);
 
 
 

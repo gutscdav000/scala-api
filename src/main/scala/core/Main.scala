@@ -5,10 +5,11 @@ package core.fp
 import model.UserModel
 import model.User
 import serializer.UserSerializer
+import service.UserService
+import service.DebtService
 
 import java.util.Date
 import org.json4s.JsonAST.JValue
-import service.UserService
 // libraries
 import com.typesafe.scalalogging.StrictLogging
 import org.http4s.server.blaze._
@@ -51,7 +52,7 @@ object Main extends IOApp with StrictLogging {
     case req @ DELETE -> Root / "user" =>
       req.as[User] flatMap( user => UserService(user).delete(transactor))
       // DEBT Routes
-
+    case GET -> Root / "debt" / username => DebtService.findByUsername(username, transactor)
   }.orNotFound
 
 

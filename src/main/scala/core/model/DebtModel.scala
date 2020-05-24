@@ -8,10 +8,11 @@ import doobie.util.transactor.Transactor
 import cats.effect.IO
 import doobie.util.fragment.Fragment
 import doobie.implicits._
+import doobie.util.transactor
 
 final case class Debt(
                      name: String,
-                     user_id: Int,
+                     userId: Int,
                      debtType: String,
                      lender: String,
                      originalBalance: Double,
@@ -34,40 +35,72 @@ final case class Debt(
 
 object DebtModel {
 
-  def findByUser(user: User, transactor: Transactor[IO]): Either[Throwable, List[Debt]] = {
+  def findByUsername(username: String, transactor: Transactor[IO]): Either[Throwable, List[Debt]] = {
     try {
-      val debtLst: List[Debt] = findBy(fr"user_id = ${user.id}", transactor).get
+      val debtLst: List[Debt] = findByUser(fr"u.username = ${username}", transactor).map(debt => debt.get)
       Right(debtLst)
     } catch {
       case exception: Throwable => Left(exception)
     }
   }
 
-  private def findBy(by: Fragment, transactor: Transactor[IO]): Option[List[Debt]] =
+  private def findByUser(by: Fragment, transactor: Transactor[IO]): List[Option[Debt]] =
     (
-      sql"""SELECT name,
-           |       user_id,
-           |       debt_type,
-           |       lender,
-           |       original_balance,
-           |       balance,
-           |       rate,
-           |       interest_paid,
-           |       periods_to_payoff,
-           |       payoff_date,
-           |       max_interest,
-           |       min_payment_value,
-           |       min_payment_percent,
-           |       loan_term,
-           |       remaining_term,
-           |       pmi,
-           |       purchase_price,
-           |       max_periods,
-           |       escrow,
-           |       max_loc
-           |       FROM public.debt WHERE """ ++ by)
+      sql"""SELECT d.name,
+                  d.user_id,
+                  d.debt_type,
+                  d.lender,
+                  d.original_balance,
+                  d.balance,
+                  d.rate,
+                  d.interest_paid,
+                  d.periods_to_payoff,
+                  d.payoff_date,
+                  d.max_interest,
+                  d.min_payment_value,
+                  d.min_payment_percent,
+                  d.loan_term,
+                  d.remaining_term,
+                  d.pmi,
+                  d.purchase_price,
+                  d.max_periods,
+                  d.escrow,
+                  d.max_loc
+                  FROM public.debt d
+                  join public.user u on u.id = d.user_id
+                  WHERE """ ++ by)
+      .query[Option[Debt]]
+      .to[List]
+      .transact(transactor)
+      .unsafeRunSync()
+
+
+  private def findBy(by: Fragment, transactor: Transactor[IO]): List[Debt] =
+    (
+      sql"""SELECT d.name,
+           |       d.user_id,
+           |       d.debt_type,
+           |       d.lender,
+           |       d.original_balance,
+           |       d.balance,
+           |       d.rate,
+           |       d.interest_paid,
+           |       d.periods_to_payoff,
+           |       d.payoff_date,
+           |       d.max_interest,
+           |       d.min_payment_value,
+           |       d.min_payment_percent,
+           |       d.loan_term,
+           |       d.remaining_term,
+           |       d.pmi,
+           |       d.purchase_price,
+           |       d.max_periods,
+           |       d.escrow,
+           |       d.max_loc
+           |       FROM public.debt d
+           |       WHERE """ ++ by)
       .query[Debt]
-      .option
+      .to[List]
       .transact(transactor)
       .unsafeRunSync()
 }
