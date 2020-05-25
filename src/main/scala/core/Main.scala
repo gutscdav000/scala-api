@@ -49,7 +49,7 @@ object Main extends IOApp with StrictLogging {
   implicit val debtDec = jsonOf[IO, Debt]
 
   def httpRoutes(transactor: Transactor[cats.effect.IO]) = HttpRoutes.of[IO] {
-        // USER Routes
+      // USER Routes
     case GET -> Root / "user" / username => UserService(User(1, username,"","",true,new Date())).getByUsername(username, transactor)
     case req @ POST -> Root / "user" =>
       req.as[User] flatMap ( user => UserService(user).insert(transactor))
@@ -61,6 +61,10 @@ object Main extends IOApp with StrictLogging {
     case GET -> Root / "debt" / username => DebtService.findByUsername(username, transactor)
     case req @ POST -> Root / "debt" =>
       req.as[Debt] flatMap(debt => DebtService.insert(debt, transactor))
+    case req @ PUT -> Root / "debt" =>
+      req.as[Debt] flatMap(debt => DebtService.update(debt, transactor))
+    case req @ DELETE -> Root / "debt" =>
+      req.as[Debt] flatMap( debt => DebtService.delete(debt, transactor))
   }.orNotFound
 
 

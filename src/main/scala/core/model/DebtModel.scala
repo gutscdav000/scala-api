@@ -1,5 +1,7 @@
 package core.model
 
+import java.math.MathContext
+import java.math.BigDecimal
 import java.util.Date
 
 import cats.effect.IO
@@ -11,6 +13,7 @@ import doobie.implicits._
 import doobie.util.transactor
 
 final case class Debt(
+                     id: Int,
                      name: String,
                      userId: Int,
                      debtType: String,
@@ -52,6 +55,55 @@ object DebtModel {
     }
   }
 
+  def updateDebt(debt: Debt, transactor: Transactor[IO]): Either[Throwable, Debt] = {
+    try {
+      sql"""UPDATE PUBLIC.DEBT
+             SET NAME = ${debt.name},
+                 DEBT_TYPE = ${debt.debtType},
+                 LENDER=${debt.lender},
+                 ORIGINAL_BALANCE=${debt.originalBalance},
+                 BALANCE=${debt.balance},
+                 RATE=${debt.rate},
+                 INTEREST_PAID=${debt.interestPaid},
+                 PERIODS_TO_PAYOFF=${debt.periodsToPayoff},
+                 PAYOFF_DATE=${debt.payoffDate},
+                 MAX_INTEREST=${debt.maxInterest},
+                 MIN_PAYMENT_VALUE=${debt.minPaymentValue},
+                 MIN_PAYMENT_PERCENT=${debt.minPaymentPercent},
+                 LOAN_TERM=${debt.loanTerm},
+                 REMAINING_TERM=${debt.remainingTerm},
+                 PMI=${debt.pmi},
+                 PURCHASE_PRICE=${debt.purchasePrice},
+                 MAX_PERIODS=${debt.maxPeriods},
+                 ESCROW=${debt.escrow},
+                 MAX_LOC=${debt.maxLoc}
+              WHERE ID = ${debt.id}
+           """.stripMargin.update.run.transact(transactor).unsafeRunSync
+      Right(debt)
+    } catch {
+      case err: Exception => Left(err)
+    }
+  }
+
+  def deleteDebt(debt: Debt, transactor: Transactor[IO]): Either[Throwable, Debt] = {
+    try {
+      val dbDebt: List[Debt] = findBy(fr"d.id = ${debt.id}", transactor)
+      if(dbDebt.length == 1) {
+        sql"""delete from public.debt where id = ${dbDebt.head.id}"""
+          .stripMargin
+            .update
+            .run
+            .transact(transactor)
+            .unsafeRunSync
+        Right(dbDebt.head)
+      } else {
+        Left(new IllegalArgumentException(s"record not found. userId: name: ${debt.name}, ${debt.userId}, type: ${debt.debtType}"))
+      }
+    } catch {
+      case exception: Throwable => Left(exception)
+    }
+  }
+
   def findByUsername(username: String, transactor: Transactor[IO]): Either[Throwable, List[Debt]] = {
     try {
       val debtLst: List[Debt] = findByUser(fr"u.username = ${username}", transactor).map(debt =>  debt.get)
@@ -63,7 +115,8 @@ object DebtModel {
 
   private def findByUser(by: Fragment, transactor: Transactor[IO]): List[Option[Debt]] =
     (
-      sql"""SELECT d.name,
+      sql"""SELECT d.id,
+                  d.name,
                   d.user_id,
                   d.debt_type,
                   d.lender,
@@ -92,30 +145,31 @@ object DebtModel {
       .unsafeRunSync()
 
 
-  private def findBy(by: Fragment, transactor: Transactor[IO]): List[Debt] =
+  def findBy(by: Fragment, transactor: Transactor[IO]): List[Debt] =
     (
-      sql"""SELECT d.name,
-           |       d.user_id,
-           |       d.debt_type,
-           |       d.lender,
-           |       d.original_balance,
-           |       d.balance,
-           |       d.rate,
-           |       d.interest_paid,
-           |       d.periods_to_payoff,
-           |       d.payoff_date,
-           |       d.max_interest,
-           |       d.min_payment_value,
-           |       d.min_payment_percent,
-           |       d.loan_term,
-           |       d.remaining_term,
-           |       d.pmi,
-           |       d.purchase_price,
-           |       d.max_periods,
-           |       d.escrow,
-           |       d.max_loc
-           |       FROM public.debt d
-           |       WHERE """ ++ by)
+      sql"""SELECT d.id,
+                   d.name,
+                   d.user_id,
+                   d.debt_type,
+                   d.lender,
+                   d.original_balance,
+                   d.balance,
+                   d.rate,
+                   d.interest_paid,
+                   d.periods_to_payoff,
+                   d.payoff_date,
+                   d.max_interest,
+                   d.min_payment_value,
+                   d.min_payment_percent,
+                   d.loan_term,
+                   d.remaining_term,
+                   d.pmi,
+                   d.purchase_price,
+                   d.max_periods,
+                   d.escrow,
+                   d.max_loc
+            FROM public.debt d
+            WHERE """ ++ by)
       .query[Debt]
       .to[List]
       .transact(transactor)

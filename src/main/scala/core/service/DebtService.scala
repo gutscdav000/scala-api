@@ -10,12 +10,11 @@ import org.http4s.Response
 import org.json4s._
 import org.json4s.jackson.Serialization.write
 import org.http4s.dsl.io.{Conflict, Created, _}
-import io.circe.generic.auto._
-import io.circe.{Encoder, Json}
+import doobie.util.fragment.Fragment
+import doobie.implicits._
 
 object DebtService {
 
-  // *** USER JSON ENCODER ***
   implicit val formats = DefaultFormats + DebtSerializer()
 
   def insert(debt: Debt, transactor: Transactor[IO]): IO[Response[IO]] = {
@@ -23,6 +22,26 @@ object DebtService {
       case Right(debt) => Created(s"Debt: ${debt.name}, ${debt.debtType}")
       case Left(err) => Conflict(s"Error: ${err}")
     }
+  }
+
+  def update(debt: Debt, transactor: Transactor[IO]): IO[Response[IO]] = {
+    val dbDebt: List[Debt] = DebtModel.findBy(fr"D.ID = ${debt.id}", transactor)
+    if( dbDebt.length > 0  ) {
+      DebtModel.updateDebt (debt, transactor) match {
+        case Left(err) => InternalServerError(s"error: ${err}")
+        case Right(debt) => Ok (s"Debt: ${debt.name}, ${debt.debtType}, ${debt.userId} updated.")
+      }
+    } else {
+      NotFound(s"Debt: ${debt.name}, ${debt.debtType}, ${debt.userId} not found.")
+    }
+  }
+
+  def delete(debt: Debt, transactor: Transactor[IO]): IO[Response[IO]] = {
+    DebtModel.deleteDebt(debt, transactor) match {
+      case Left(err) => NotFound(s"Debt: ${debt.name}, ${debt.userId}, ${debt.debtType} not found. Error: ${err}")
+      case Right(debt) => Ok(s"Debt: ${debt.name}, ${debt.debtType}, ${debt.userId} deleted.")
+    }
+
   }
 
   def findByUsername(username: String, transactor: Transactor[IO]): IO[Response[IO]] = {
@@ -33,8 +52,3 @@ object DebtService {
   }
 
 }
-
-
-//object DebtService {
-//  def apply(debt: Debt) = new DebtService(debt)
-//}
