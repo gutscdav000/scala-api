@@ -4,13 +4,15 @@ package core.fp
 // custom
 import model.UserModel
 import model.User
+import model.Debt
 import serializer.UserSerializer
+import serializer.DebtSerializer
 import service.UserService
 import service.DebtService
 
+// libraries
 import java.util.Date
 import org.json4s.JsonAST.JValue
-// libraries
 import com.typesafe.scalalogging.StrictLogging
 import org.http4s.server.blaze._
 import org.http4s.HttpRoutes
@@ -33,14 +35,18 @@ object Main extends IOApp with StrictLogging {
     "postgres"
   )
 
-  // *** USER JSON DECODER ***
+
   // create a json4s Reader[User]
-  implicit val formats = DefaultFormats + UserSerializer()
+  implicit val formats = DefaultFormats + UserSerializer() + DebtSerializer() //do i need this?
   implicit val userReader = new Reader[User] {
     def read(value: JValue): User = value.extract[User]
   }
+  implicit val debtReader = new Reader[Debt] {
+    def read(value: JValue): Debt = value.extract[Debt]
+  }
   // create a http4s EntityDecoder[User] (which uses the Reader)
   implicit val userDec = jsonOf[IO, User]
+  implicit val debtDec = jsonOf[IO, Debt]
 
   def httpRoutes(transactor: Transactor[cats.effect.IO]) = HttpRoutes.of[IO] {
         // USER Routes
@@ -53,6 +59,8 @@ object Main extends IOApp with StrictLogging {
       req.as[User] flatMap( user => UserService(user).delete(transactor))
       // DEBT Routes
     case GET -> Root / "debt" / username => DebtService.findByUsername(username, transactor)
+    case req @ POST -> Root / "debt" =>
+      req.as[Debt] flatMap(debt => DebtService.insert(debt, transactor))
   }.orNotFound
 
 

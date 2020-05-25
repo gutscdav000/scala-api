@@ -18,6 +18,12 @@ object DebtService {
   // *** USER JSON ENCODER ***
   implicit val formats = DefaultFormats + DebtSerializer()
 
+  def insert(debt: Debt, transactor: Transactor[IO]): IO[Response[IO]] = {
+    DebtModel.insertDebt(debt, transactor) match {
+      case Right(debt) => Created(s"Debt: ${debt.name}, ${debt.debtType}")
+      case Left(err) => Conflict(s"Error: ${err}")
+    }
+  }
 
   def findByUsername(username: String, transactor: Transactor[IO]): IO[Response[IO]] = {
       DebtModel.findByUsername(username, transactor) match {

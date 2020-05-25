@@ -35,9 +35,26 @@ final case class Debt(
 
 object DebtModel {
 
+  def insertDebt(debt: Debt, transactor: Transactor[IO]): Either[Throwable, Debt] = {
+    try {
+      sql"""INSERT INTO PUBLIC.DEBT (NAME, USER_ID, DEBT_TYPE, LENDER, ORIGINAL_BALANCE, BALANCE, RATE,
+                                     INTEREST_PAID, PERIODS_TO_PAYOFF, PAYOFF_DATE, MAX_INTEREST, MIN_PAYMENT_VALUE,
+                                     MIN_PAYMENT_PERCENT, LOAN_TERM, REMAINING_TERM, PMI, PURCHASE_PRICE, MAX_PERIODS,
+                                     ESCROW, MAX_LOC)
+           VALUES (${debt.name}, ${debt.userId}, ${debt.debtType}, ${debt.lender}, ${debt.originalBalance}, ${debt.balance}, ${debt.rate},
+                   ${debt.interestPaid}, ${debt.periodsToPayoff}, ${debt.payoffDate}, ${debt.maxInterest}, ${debt.minPaymentValue},
+                   ${debt.minPaymentPercent}, ${debt.loanTerm}, ${debt.remainingTerm}, ${debt.pmi}, ${debt.purchasePrice}, ${debt.maxPeriods},
+                   ${debt.escrow}, ${debt.maxLoc})
+       """.stripMargin.update.run.transact(transactor).unsafeRunSync
+      Right(debt)
+    } catch {
+      case err: Throwable => Left(err)
+    }
+  }
+
   def findByUsername(username: String, transactor: Transactor[IO]): Either[Throwable, List[Debt]] = {
     try {
-      val debtLst: List[Debt] = findByUser(fr"u.username = ${username}", transactor).map(debt => debt.get)
+      val debtLst: List[Debt] = findByUser(fr"u.username = ${username}", transactor).map(debt =>  debt.get)
       Right(debtLst)
     } catch {
       case exception: Throwable => Left(exception)

@@ -48,7 +48,7 @@ object UserModel {
            | VALUES (${user.username}, ${user.email}, ${user.passwordHash}, ${user.isActive}, ${user.dob})"""
         .stripMargin.update.run
         .transact(transactor)
-        .unsafeRunSync()
+        .unsafeRunSync
       Right(user)
     } catch {
       case exception: Throwable => Left(exception)
