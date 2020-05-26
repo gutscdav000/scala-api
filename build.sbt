@@ -30,6 +30,7 @@ libraryDependencies ++= Seq(
   "io.circe" % "circe-core_2.13" % circeVersion,
   "io.circe" %% "circe-generic" % circeVersion,
   "io.circe"  %% "circe-parser"   % circeVersion,
+  "io.circe" %% "circe-optics" % circeVersion,
   "org.http4s" % "http4s-client_2.13" % http4sVersion,
   "org.http4s" % "http4s-dsl_2.13" % http4sVersion,
   "org.http4s" % "http4s-blaze-server_2.13" % http4sVersion,
