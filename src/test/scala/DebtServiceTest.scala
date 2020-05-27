@@ -1,24 +1,25 @@
 import java.text.SimpleDateFormat
 
 import cats.effect.IO
-import core.model.{Debt, DebtModel, User, UserModel}
-import core.serializer.{DebtSerializer, UserSerializer}
-import core.service.{DebtService, UserService}
+import core.model.{Debt, DebtModel}
+import core.serializer.{DebtSerializer}
+import core.service.{DebtService}
 import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
-import doobie.util.fragment.Fragment
 import doobie.implicits._
-import io.circe.{Json, parser}
+import io.circe.{Json}
 import org.http4s.circe._
 import org.http4s.json4s.jackson.jsonOf
 import org.http4s.{EntityDecoder, Response, Status}
 import org.json4s.JsonAST.JValue
 import org.json4s.{DefaultFormats, Reader}
 import org.scalatest.FunSuite
-import io.circe._
 import io.circe.parser._
 
 class DebtServiceTest extends FunSuite {
+
+  private var updateId: Int = 0;
+
   implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
   implicit val formats = DefaultFormats + DebtSerializer() //do i need this?
@@ -132,6 +133,106 @@ class DebtServiceTest extends FunSuite {
 
     val ret = DebtService.insert(newDebt, transactor).unsafeRunSync
     assert(Status.Conflict == ret.status)
+  }
 
+  test("DebtService.update Success") {
+    val db: List[Debt] = DebtModel.findBy(fr"NAME='test debt' and DEBT_TYPE='Mortgage' and USER_ID=1", transactor)
+    this.updateId = db.head.id
+
+    val updateDebt: Debt = Debt(
+      db.head.id,
+      "test debt 123",
+      1,
+      "Mortgage",
+      "Test Lender 2",
+      50000.0,
+      50000.0,
+      0.08,
+      15000.0,
+      12,
+      new SimpleDateFormat("yyyy-MM-dd").parse("2021-12-01"),
+      15500.0,
+      1000.0,
+      -1.0,
+      180,
+      18,
+      6000,
+      450000.0,
+      170,
+      9000.0,
+      14000.0
+    )
+
+    val ret = DebtService.update(updateDebt,transactor).unsafeRunSync
+    assert( ret.status == Status.Ok)
+
+    val dbDebt: List[Debt] = DebtModel.findBy(fr"NAME=${updateDebt.name} and DEBT_TYPE=${updateDebt.debtType} and USER_ID=${updateDebt.userId}", transactor)
+    assert( dbDebt.head == updateDebt)
+  }
+
+  test("DebtService.update Fail") {
+    val updateDebt: Debt = Debt(
+      0,
+      "test debt 123",
+      1,
+      "Mortgage",
+      "Test Lender 2",
+      50000.0,
+      50000.0,
+      0.08,
+      15000.0,
+      12,
+      new SimpleDateFormat("yyyy-MM-dd").parse("2021-12-01"),
+      15500.0,
+      1000.0,
+      -1.0,
+      180,
+      18,
+      6000,
+      450000.0,
+      170,
+      9000.0,
+      14000.0
+    )
+
+    val ret = DebtService.update(updateDebt,transactor).unsafeRunSync
+    assert( ret.status == Status.NotFound)
+  }
+
+  test("DebtService.delete Success") {
+    val db: List[Debt] = DebtModel.findBy(fr"NAME='test debt 123' and DEBT_TYPE='Mortgage' and USER_ID=1", transactor)
+    val ret = DebtService.delete(db.head, transactor).unsafeRunSync
+    assert(ret.status == Status.Ok)
+
+    val checkDebt: List[Debt] = DebtModel.findBy(fr"ID = ${db.head.id}", transactor)
+    assert(checkDebt.isEmpty)
+  }
+
+  test("DebtService.delete Gone") {
+    val deletedDebt: Debt = Debt(
+      this.updateId,
+      "test debt 123",
+      1,
+      "Mortgage",
+      "Test Lender 2",
+      50000.0,
+      50000.0,
+      0.08,
+      15000.0,
+      12,
+      new SimpleDateFormat("yyyy-MM-dd").parse("2021-12-01"),
+      15500.0,
+      1000.0,
+      -1.0,
+      180,
+      18,
+      6000,
+      450000.0,
+      170,
+      9000.0,
+      14000.0
+    )
+    val ret = DebtService.delete(deletedDebt, transactor).unsafeRunSync
+    assert(ret.status == Status.NotFound)
   }
 }
