@@ -4,16 +4,13 @@ import java.math.MathContext
 import java.math.BigDecimal
 import java.util.Date
 
-import cats.effect.IO
-import doobie.util.fragment.Fragment
 import doobie.util.transactor.Transactor
 import cats.effect.IO
 import doobie.util.fragment.Fragment
 import doobie.implicits._
-import doobie.util.transactor
 
 final case class Debt(
-                     id: Int,
+                     var id: Int,
                      name: String,
                      userId: Int,
                      debtType: String,

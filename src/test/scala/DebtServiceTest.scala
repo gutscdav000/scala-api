@@ -1,11 +1,13 @@
 import java.text.SimpleDateFormat
 
 import cats.effect.IO
-import core.model.{Debt, User, UserModel}
+import core.model.{Debt, DebtModel, User, UserModel}
 import core.serializer.{DebtSerializer, UserSerializer}
 import core.service.{DebtService, UserService}
 import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
+import doobie.util.fragment.Fragment
+import doobie.implicits._
 import io.circe.{Json, parser}
 import org.http4s.circe._
 import org.http4s.json4s.jackson.jsonOf
@@ -13,7 +15,8 @@ import org.http4s.{EntityDecoder, Response, Status}
 import org.json4s.JsonAST.JValue
 import org.json4s.{DefaultFormats, Reader}
 import org.scalatest.FunSuite
-import io.circe._, io.circe.parser._
+import io.circe._
+import io.circe.parser._
 
 class DebtServiceTest extends FunSuite {
   implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
@@ -65,5 +68,70 @@ class DebtServiceTest extends FunSuite {
       """).getOrElse(Json.Null)
 
     assert(check(debtResp, Status.Ok, Some(inputString)))
+  }
+
+  test("DebtService.insert Success") {
+    val newDebt: Debt = Debt(
+      0,
+      "test debt",
+      1,
+      "Mortgage",
+      "Test Lender",
+      50000.0,
+      50000.0,
+      0.10,
+      1500.0,
+      15,
+      new SimpleDateFormat("yyyy-MM-dd").parse("2021-08-01"),
+      15000.0,
+      1200.0,
+      -1.0,
+      180,
+      15,
+      6000,
+      450000.0,
+      180,
+      10000.0,
+      15000.0
+    )
+
+    val ret = DebtService.insert(newDebt, transactor).unsafeRunSync
+    assert(Status.Created == ret.status)
+
+    val dbDebt: List[Debt] = DebtModel.findBy(fr"NAME=${newDebt.name} and DEBT_TYPE=${newDebt.debtType} and USER_ID=${newDebt.userId}", transactor)
+    if(dbDebt.head != null) {
+      newDebt.id = dbDebt.head.id
+    }
+    assert(newDebt == dbDebt.head)
+  }
+
+  test("DebtService.insert Fail") {
+    val newDebt: Debt = Debt(
+      0,
+      "test debt",
+      1,
+      "Mortgage",
+      "Test Lender",
+      50000.0,
+      50000.0,
+      0.10,
+      1500.0,
+      15,
+      new SimpleDateFormat("yyyy-MM-dd").parse("2021-08-01"),
+      15000.0,
+      1200.0,
+      -1.0,
+      180,
+      15,
+      6000,
+      450000.0,
+      180,
+      10000.0,
+      15000.0
+    )
+
+    val ret = DebtService.insert(newDebt, transactor).unsafeRunSync
+    assert(Status.Conflict == ret.status)
+
   }
 }
