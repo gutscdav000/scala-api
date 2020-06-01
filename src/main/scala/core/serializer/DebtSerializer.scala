@@ -1,16 +1,12 @@
 package core.serializer
 
+import java.text.SimpleDateFormat
+
 import core.model.Debt
 import org.json4s.{CustomSerializer, JString, DefaultFormats}
 import org.json4s._
-import JsonDSL._
-import java.text.SimpleDateFormat
-
 import org.json4s.JsonAST._
 import org.json4s.JsonDSL._
-import org.json4s.Formats
-import org.json4s
-
 
 class DebtSerializer extends CustomSerializer[Debt](implicit format => ( {
     case jsonObj: JObject =>

@@ -41,7 +41,6 @@ object DebtService {
       case Left(err) => NotFound(s"Debt: ${debt.name}, ${debt.userId}, ${debt.debtType} not found. Error: ${err}")
       case Right(debt) => Ok(s"Debt: ${debt.name}, ${debt.debtType}, ${debt.userId} deleted.")
     }
-
   }
 
   def findByUsername(username: String, transactor: Transactor[IO]): IO[Response[IO]] = {

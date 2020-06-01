@@ -2,14 +2,9 @@ package core
 package core.fp
 
 // custom
-import model.UserModel
-import model.User
-import model.Debt
-import serializer.UserSerializer
-import serializer.DebtSerializer
-import service.UserService
-import service.DebtService
-
+import model.{User, Debt, Action}
+import serializer.{UserSerializer, DebtSerializer, ActionSerializer}
+import service.{UserService, DebtService, ActionService}
 // libraries
 import java.util.Date
 import org.json4s.JsonAST.JValue
@@ -37,16 +32,20 @@ object Main extends IOApp with StrictLogging {
 
 
   // create a json4s Reader[User]
-  implicit val formats = DefaultFormats + UserSerializer() + DebtSerializer() //do i need this?
+  implicit val formats = DefaultFormats + UserSerializer() + DebtSerializer() + ActionSerializer()
   implicit val userReader = new Reader[User] {
     def read(value: JValue): User = value.extract[User]
   }
   implicit val debtReader = new Reader[Debt] {
     def read(value: JValue): Debt = value.extract[Debt]
   }
+  implicit val actionReader = new Reader[Action] {
+    def read(value: JValue): Action = value.extract[Action]
+  }
   // create a http4s EntityDecoder[User] (which uses the Reader)
   implicit val userDec = jsonOf[IO, User]
   implicit val debtDec = jsonOf[IO, Debt]
+  implicit val actionDec = jsonOf[IO, Action]
 
   def httpRoutes(transactor: Transactor[cats.effect.IO]) = HttpRoutes.of[IO] {
       // USER Routes
@@ -65,6 +64,12 @@ object Main extends IOApp with StrictLogging {
       req.as[Debt] flatMap(debt => DebtService.update(debt, transactor))
     case req @ DELETE -> Root / "debt" =>
       req.as[Debt] flatMap( debt => DebtService.delete(debt, transactor))
+      // ACTION Routes
+    case GET -> Root / "action" / username => ActionService.findByUsername(username, transactor)
+    case req @ POST -> Root / "action" =>
+      req.as[Action] flatMap( action => ActionService.insert(action, transactor))
+    case req @ DELETE -> Root / "action" =>
+      req.as[Action] flatMap( action => ActionService.delete(action, transactor))
   }.orNotFound
 
 

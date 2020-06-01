@@ -1,13 +1,11 @@
 package core.model
 
-import java.math.MathContext
-import java.math.BigDecimal
 import java.util.Date
 
-import doobie.util.transactor.Transactor
-import cats.effect.IO
-import doobie.util.fragment.Fragment
-import doobie.implicits._
+  import doobie.util.transactor.Transactor
+  import cats.effect.IO
+  import doobie.util.fragment.Fragment
+  import doobie.implicits._
 
 final case class Debt(
                      var id: Int,
@@ -134,12 +132,12 @@ object DebtModel {
                   d.escrow,
                   d.max_loc
                   FROM public.debt d
-                  join public.user u on u.id = d.user_id
-                  WHERE """ ++ by)
+                    join public.user u on u.id = d.user_id
+                    WHERE """ ++ by)
       .query[Option[Debt]]
       .to[List]
       .transact(transactor)
-      .unsafeRunSync()
+      .unsafeRunSync
 
 
   def findBy(by: Fragment, transactor: Transactor[IO]): List[Debt] =
@@ -170,5 +168,5 @@ object DebtModel {
       .query[Debt]
       .to[List]
       .transact(transactor)
-      .unsafeRunSync()
+      .unsafeRunSync
 }
