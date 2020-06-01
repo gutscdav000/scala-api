@@ -20,7 +20,7 @@ create table public.debt
 	id serial primary key,
 	name varchar(255) not null,
 	user_id Integer references public.user(id),
-	debt_type varchar(255) references public.debt_types(debt_type),
+	debt_type varchar(255) references public.debt_type(debt_type),
 	lender varchar(255),
 	original_balance numeric(13,2),
 	balance numeric(13,2),
@@ -47,7 +47,7 @@ create table public.debt_hist
 	id serial primary key,
 	name varchar(255) not null,
 	user_id Integer references public.user(id),
-	debt_type varchar(255) references public.debt_types(debt_type),
+	debt_type varchar(255) references public.debt_type(debt_type),
 	lender varchar(255),
 	original_balance numeric(13,2),
 	balance numeric(13,2),
@@ -68,11 +68,19 @@ create table public.debt_hist
 	update_stamp timestamp
 );
 
+create table public.action
+(
+	id serial primary key,
+	debt_id Integer references public.debt(id),
+	principal numeric(13,2) not null,
+	interest numeric(13,2) not null,
+	pay_date date
+);
 
 insert into public."user"
  values (1, 'gutscdav000', 'gutscdav000@gmail.com', 'pass', true, '1996-02-08');
 
-insert into public.debt_types
+insert into public.debt_type
  values (1, 'Mortgage'),
  		(2, 'Auto Loan'),
 		(3, 'Student Loan'),
@@ -85,5 +93,16 @@ insert into public.debt
 		(2, 'david''s credit card', 1, 'Credit Card', 'Chase', 0.0, 0.0, 0.18, 0.0, 0, '0001-01-01',
 		 0.0, -1.0, 0.02, -1, -1, -1, -1, -1, -1, -1);
 
+insert into public.action
+ values (1, 1, 240.67, 833.33, null),
+ 		(2, 1, 241.67, 832.33, null),
+		(3, 1, 242.68, 831.32, null),
+		(4, 1, 243.69, 830.31, null),
+		(5, 1, 244.70, 829.30, null);
+		
 
-
+drop table public.action;
+drop table public.debt;
+drop table public.debt_hist;
+drop table public.debt_type;
+drop table public.user;
