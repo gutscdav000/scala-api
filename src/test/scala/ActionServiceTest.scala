@@ -1,10 +1,9 @@
 import java.text.SimpleDateFormat
 
 import cats.effect.IO
-import core.model.{Action, ActionModel}
-import core.serializer.{ ActionSerializer }
+import core.model.{Action, ActionModel, Debt, DebtModel}
+import core.serializer.ActionSerializer
 import core.service.ActionService
-
 import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
 import doobie.implicits._
@@ -14,10 +13,10 @@ import org.http4s.json4s.jackson.jsonOf
 import org.http4s.{EntityDecoder, Response, Status}
 import org.json4s.JsonAST.JValue
 import org.json4s.{DefaultFormats, Reader}
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import io.circe.parser._
 
-class ActionServiceTest extends FunSuite {
+class ActionServiceTest extends FunSuite with BeforeAndAfterAll {
   private var updateId: Int = 0;
 
   implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
@@ -34,14 +33,15 @@ class ActionServiceTest extends FunSuite {
     "postgres",
     "postgres"
   )
-  def check[A](actual:        IO[Response[IO]],
+
+  def check[A](actual: IO[Response[IO]],
                expectedStatus: Status,
-               expectedBody:   Option[A])(
+               expectedBody: Option[A])(
                 implicit ev: EntityDecoder[IO, A]
-              ): Boolean =  {
-    val actualResp         = actual.unsafeRunSync
-    val statusCheck        = actualResp.status == expectedStatus
-    val bodyCheck          = expectedBody.fold[Boolean](
+              ): Boolean = {
+    val actualResp = actual.unsafeRunSync
+    val statusCheck = actualResp.status == expectedStatus
+    val bodyCheck = expectedBody.fold[Boolean](
       actualResp.body.compile.toVector.unsafeRunSync.isEmpty)( // Verify Response's body is empty.
       expected => actualResp.as[A].unsafeRunSync == expected
     )
@@ -64,7 +64,7 @@ class ActionServiceTest extends FunSuite {
           and A.PRINCIPAL=${newAction.principal}
           """.stripMargin, transactor)
 
-    if(!dbAction.isEmpty) {
+    if (!dbAction.isEmpty) {
       this.updateId = dbAction.head.id
       newAction.id = this.updateId
     }
@@ -79,11 +79,11 @@ class ActionServiceTest extends FunSuite {
     val db: List[Action] = ActionModel.findBy(fr"a.id = ${updateAction.id}", transactor)
     this.updateId = db.head.id
 
-    val ret = ActionService.update(updateAction,transactor).unsafeRunSync
-    assert( ret.status == Status.Ok)
+    val ret = ActionService.update(updateAction, transactor).unsafeRunSync
+    assert(ret.status == Status.Ok)
 
     val dbAction: List[Action] = ActionModel.findBy(fr"a.id = ${updateAction.id}", transactor)
-    assert( dbAction.head == updateAction)
+    assert(dbAction.head == updateAction)
   }
 
   test("ActionService.update Fail") {
@@ -91,14 +91,15 @@ class ActionServiceTest extends FunSuite {
       new SimpleDateFormat("yyyy-MM-dd").parse("2021-06-03")
     )
 
-    val ret = ActionService.update(updateAction,transactor).unsafeRunSync
-    assert( ret.status == Status.NotFound)
+    val ret = ActionService.update(updateAction, transactor).unsafeRunSync
+    assert(ret.status == Status.NotFound)
   }
 
   test("ActionService.findByUsername success") {
     val actionResp = ActionService.findByUsername("gutscdav000", transactor)
 
-    val inputString: Json = parse(s"""
+    val inputString: Json = parse(
+      s"""
       [
         {"id":1,"debtId":1,"userId":1,"principal":240.67,"interest":833.33,"payDate":"0001-01-01"},
         {"id":2,"debtId":1,"userId":1,"principal":241.67,"interest":832.33,"payDate":"0001-01-01"},
@@ -115,7 +116,8 @@ class ActionServiceTest extends FunSuite {
   test("ActionService.findByUsername fail") {
     val debtResp = ActionService.findByUsername("none", transactor)
 
-    val inputString: Json = parse("""
+    val inputString: Json = parse(
+      """
       []
       """).getOrElse(Json.Null)
 
@@ -137,5 +139,33 @@ class ActionServiceTest extends FunSuite {
     )
     val ret = ActionService.delete(deletedAction, transactor).unsafeRunSync
     assert(ret.status == Status.NotFound)
+  }
+
+  override def afterAll(): Unit = {
+    val oldDebt = new Debt(
+      2, "david's credit card", 1, "Credit Card", "Chase", 0.0,
+      0.0, 0.18, 0.0, 0, new SimpleDateFormat("yyyy-MM-dd").parse("0001-01-01"),
+      0.0, -1.0, 0.02, -1, -1, -1.0,
+      -1.0, -1, -1.0, -1.0
+    )
+
+    DebtModel.updateDebt(oldDebt, transactor) match {
+      case Left(err) => new IllegalStateException("Couldn't revert debt record.")
+      case Right(debt) => debt
+    }
+  }
+
+  override def beforeAll(): Unit = {
+    val oldDebt = new Debt(
+      2, "david's credit card", 1, "Credit Card", "Chase", 0.0,
+      0.0, 0.18, 0.0, 0, new SimpleDateFormat("yyyy-MM-dd").parse("0001-01-01"),
+      0.0, -1.0, 0.02, -1, -1, -1.0,
+      -1.0, -1, -1.0, -1.0
+    )
+
+    DebtModel.updateDebt(oldDebt, transactor) match {
+      case Left(err) => new IllegalStateException("Couldn't revert debt record.")
+      case Right(debt) => debt
+    }
   }
 }
