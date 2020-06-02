@@ -7,7 +7,7 @@ import cats.effect.IO
 import doobie.util.fragment.Fragment
 import doobie.implicits._
 
-case class Action(id: Int, debtId: Int, userId: Int, principal: Double, interest: Double, payDate: Date)
+case class Action(var id: Int, debtId: Int, userId: Int, principal: Double, interest: Double, payDate: Date)
 
 object ActionModel {
 
@@ -19,6 +19,20 @@ object ActionModel {
       Right(action)
     } catch {
       case err: Throwable => Left(err)
+    }
+  }
+
+  def updateAction(action: Action, transactor: Transactor[IO]): Either[Throwable, Action] = {
+    try {
+      sql"""UPDATE PUBLIC.ACTION
+             SET PRINCIPAL = ${action.principal},
+                 INTEREST = ${action.interest},
+                 PAY_DATE = ${action.payDate}
+              WHERE ID = ${action.id}
+           """.stripMargin.update.run.transact(transactor).unsafeRunSync
+      Right(action)
+    } catch {
+      case err: Exception => Left(err)
     }
   }
 

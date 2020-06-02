@@ -68,6 +68,8 @@ object Main extends IOApp with StrictLogging {
     case GET -> Root / "action" / username => ActionService.findByUsername(username, transactor)
     case req @ POST -> Root / "action" =>
       req.as[Action] flatMap( action => ActionService.insert(action, transactor))
+    case req @ PUT -> Root / "action" =>
+      req.as[Action] flatMap( action => ActionService.update(action, transactor))
     case req @ DELETE -> Root / "action" =>
       req.as[Action] flatMap( action => ActionService.delete(action, transactor))
   }.orNotFound

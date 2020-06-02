@@ -17,8 +17,20 @@ object ActionService {
 
   def insert(action: Action, transactor: Transactor[IO]): IO[Response[IO]] = {
     ActionModel.insertAction(action, transactor) match {
-      case Right(debt) => Created(s"action: ${action.debtId}, ${action.principal}, ${action.interest} created.")
+      case Right(action) => Created(s"action: ${action.debtId}, ${action.principal}, ${action.interest} created.")
       case Left(err) => Conflict(s"Error: ${err}")
+    }
+  }
+
+  def update(action: Action, transactor: Transactor[IO]): IO[Response[IO]] = {
+    val dbAction: List[Action] = ActionModel.findBy(fr"A.ID = ${action.id}", transactor)
+    if( dbAction.length > 0  ) {
+      ActionModel.updateAction (action, transactor) match {
+        case Left(err) => InternalServerError(s"error: ${err}")
+        case Right(action) => Ok (s"action (debtId, userId): (${action.debtId}, ${action.userId}) updated.")
+      }
+    } else {
+      NotFound(s"action (debtId, userId): (${action.debtId}, ${action.userId}) not found.")
     }
   }
 
