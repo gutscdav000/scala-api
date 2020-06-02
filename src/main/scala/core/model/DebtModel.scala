@@ -52,6 +52,7 @@ object DebtModel {
 
   def updateDebt(debt: Debt, transactor: Transactor[IO]): Either[Throwable, Debt] = {
     try {
+      DebtHistModel.insertDebtHist(debt, transactor)
       sql"""UPDATE PUBLIC.DEBT
              SET NAME = ${debt.name},
                  DEBT_TYPE = ${debt.debtType},
