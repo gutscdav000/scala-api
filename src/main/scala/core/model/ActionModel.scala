@@ -14,7 +14,7 @@ object ActionModel {
   def insertAction(action: Action, transactor: Transactor[IO]): Either[Throwable, Action] = {
     try {
       sql"""INSERT INTO PUBLIC.ACTION ( DEBT_ID, USER_ID, PRINCIPAL, INTEREST, PAY_DATE )
-           VALUES (${action.userId}, ${action.debtId}, ${action.principal}, ${action.interest}, ${action.payDate})
+           VALUES (${action.debtId}, ${action.userId}, ${action.principal}, ${action.interest}, ${action.payDate})
        """.stripMargin.update.run.transact(transactor).unsafeRunSync
       Right(action)
     } catch {

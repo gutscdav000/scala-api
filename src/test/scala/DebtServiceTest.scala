@@ -22,7 +22,7 @@ class DebtServiceTest extends FunSuite {
 
   implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
 
-  implicit val formats = DefaultFormats + DebtSerializer() //do i need this?
+  implicit val formats = DefaultFormats + DebtSerializer()
   implicit val debtReader = new Reader[Debt] {
     def read(value: JValue): Debt = value.extract[Debt]
   }
