@@ -44,7 +44,7 @@ create table public.debt
 
 create table public.debt_hist
 (
-	id serial primary key,
+	id Integer,
 	name varchar(255) not null,
 	user_id Integer references public.user(id),
 	debt_type varchar(255) references public.debt_type(debt_type),
@@ -65,13 +65,15 @@ create table public.debt_hist
 	max_periods Integer,
 	escrow numeric(13,2),
 	max_loc numeric(13,2),
-	update_stamp timestamp
+	update_stamp timestamp,
+	constraint debt_hist_constraint unique (id, update_stamp)
 );
 
 create table public.action
 (
 	id serial primary key,
 	debt_id Integer references public.debt(id),
+	user_id Integer references public.user(id),
 	principal numeric(13,2) not null,
 	interest numeric(13,2) not null,
 	pay_date date
@@ -91,15 +93,16 @@ insert into public.debt
  values (1, 'david''s mortgage', 1, 'Mortgage', 'Fannie Mae', 200000.0, 200000.0, 0.05, 0.0,
 		360, '2050-05-01', 186343.11, 1074.0, -1.0, 360, 360,-1.0, 250000.0, 360, -1.0, -1.0),
 		(2, 'david''s credit card', 1, 'Credit Card', 'Chase', 0.0, 0.0, 0.18, 0.0, 0, '0001-01-01',
-		 0.0, -1.0, 0.02, -1, -1, -1, -1, -1, -1, -1);
-
+		 0.0, -1.0, 0.02, -1, -1, -1, -1, -1, -1, -1),
+		 (3, 'david''s Heloc', 1, 'Line of Credit', 'Chase', 10000.0, 10000.0, 0.0375, 0.0, 
+		  360, '2050-05-01', 0.0, 46.0, -1.0, 360, 360, -1, -1, 360, -1, 10000.0);
+		  
 insert into public.action
- values (1, 1, 240.67, 833.33, null),
- 		(2, 1, 241.67, 832.33, null),
-		(3, 1, 242.68, 831.32, null),
-		(4, 1, 243.69, 830.31, null),
-		(5, 1, 244.70, 829.30, null);
-		
+ values (1, 1, 1, 240.67, 833.33, '0001-01-01'),
+ 		(2, 1, 1, 241.67, 832.33, '0001-01-01'),
+		(3, 1, 1, 242.68, 831.32, '0001-01-01'),
+		(4, 1, 1, 243.69, 830.31, '0001-01-01'),
+		(5, 1, 1, 244.70, 829.30, '0001-01-01');
 
 drop table public.action;
 drop table public.debt;
