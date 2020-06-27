@@ -2,9 +2,10 @@ package core
 package core.fp
 
 // custom
-import model.{User, Debt, Action}
-import serializer.{UserSerializer, DebtSerializer, ActionSerializer}
-import service.{UserService, DebtService, ActionService}
+import model.{Action, Debt, User}
+import org.http4s.Uri.UserInfo
+import serializer.{ActionSerializer, DebtSerializer, UserSerializer}
+import service.{ActionService, DebtService, UserService, AuthService}
 // libraries
 import java.util.Date
 import org.json4s.JsonAST.JValue
@@ -19,6 +20,7 @@ import doobie.{ConnectionIO, Fragment, Transactor}
 import doobie.implicits._
 import cats.effect._
 import cats.effect.IO
+//import org.http4s.circe._
 
 
 object Main extends IOApp with StrictLogging {
@@ -42,12 +44,19 @@ object Main extends IOApp with StrictLogging {
   implicit val actionReader = new Reader[Action] {
     def read(value: JValue): Action = value.extract[Action]
   }
+  implicit val authInfoReader = new Reader[UserInfo] {
+    def read(value: JValue): UserInfo = value.extract[UserInfo]
+  }
   // create a http4s EntityDecoder[User] (which uses the Reader)
   implicit val userDec = jsonOf[IO, User]
   implicit val debtDec = jsonOf[IO, Debt]
   implicit val actionDec = jsonOf[IO, Action]
+  implicit def authInfoDec = jsonOf[IO, UserInfo]
 
   def httpRoutes(transactor: Transactor[cats.effect.IO]) = HttpRoutes.of[IO] {
+      // LOGIN
+    case req @ POST -> Root / "login" =>
+      req.as[UserInfo] flatMap( user => AuthService.login(user, transactor))
       // USER Routes
     case GET -> Root / "user" / username => UserService(User(1, username,"","",true,new Date())).getByUsername(username, transactor)
     case req @ POST -> Root / "user" =>

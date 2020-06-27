@@ -26,6 +26,8 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "io.github.jmcardon" %% "tsec-password" % tsecVersion,
   "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
+  "io.github.jmcardon" % "tsec-mac_2.13" % tsecVersion,
+  "io.github.jmcardon" % "tsec-http4s_2.13" % tsecVersion,
   "org.http4s" %% "http4s-circe" % http4sVersion,
   "io.circe" % "circe-core_2.13" % circeVersion,
   "io.circe" %% "circe-generic" % circeVersion,
