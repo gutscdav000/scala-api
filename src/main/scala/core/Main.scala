@@ -4,8 +4,9 @@ package core.fp
 // custom
 import model.{Action, Debt, User}
 import org.http4s.Uri.UserInfo
+import org.http4s.headers.Authorization
 import serializer.{ActionSerializer, DebtSerializer, UserSerializer}
-import service.{ActionService, DebtService, UserService, AuthService}
+import service.{ActionService, AuthService, DebtService, JwtTokenGenerator, UserService}
 // libraries
 import java.util.Date
 import org.json4s.JsonAST.JValue
@@ -51,12 +52,18 @@ object Main extends IOApp with StrictLogging {
   implicit val actionDec = jsonOf[IO, Action]
   implicit def authInfoDec = jsonOf[IO, UserInfo]
 
+  val jwtGenerator = new JwtTokenGenerator()
+
   def httpRoutes(transactor: Transactor[cats.effect.IO]) = HttpRoutes.of[IO] {
       // LOGIN
     case req @ POST -> Root / "login" =>
-      req.as[UserInfo] flatMap( user => AuthService.login2(user, transactor))
+      req.as[UserInfo] flatMap( user => AuthService.login(user, transactor))
       // USER Routes
-    case GET -> Root / "user" / username => UserService(User(1, username,"","",true,new Date())).getByUsername(username, transactor)
+    case req @ GET -> Root / "user" / username => {
+      val header = req.headers.get(Authorization).getOrElse("")
+      val verif = jwtGenerator.tokenIsValid(header.toString)
+      UserService(User(1, username,"","",true,new Date())).getByUsername(username, transactor)
+    }
     case req @ POST -> Root / "user" =>
       req.as[User] flatMap ( user => UserService(user).insert(transactor))
     case req @ PUT -> Root / "user" =>

@@ -10,6 +10,7 @@ val tapirVersion = "0.12.15"
 val http4sVersion = "0.21.4"
 val tsecVersion = "0.2.0"
 val circeVersion = "0.13.0"
+val jwtVersion = "4.3.0"
 
 libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-postgres" % doobieVersion,
@@ -42,8 +43,8 @@ libraryDependencies ++= Seq(
   "org.http4s" % "http4s-json4s_2.13" % http4sVersion,
   "io.circe" % "circe-derivation_2.13" % "0.13.0-M4",
   "org.json4s" % "json4s-native_2.13" % "3.7.0-M4",
-  "org.reactormonk" % "cryptobits_2.13" % "1.3",
-//  "joda-time" % "joda-time" % "2.10.6",
+  "com.pauldijou" % "jwt-core_2.13" % jwtVersion,
+  "com.pauldijou" % "jwt-circe_2.13" % jwtVersion,
   scalaTest
 )
 
