@@ -16,11 +16,9 @@ import org.http4s.syntax.kleisli._
 import org.http4s.dsl.io._
 import org.http4s.json4s.jackson._
 import org.json4s._
-import doobie.{ConnectionIO, Fragment, Transactor}
-import doobie.implicits._
+import doobie.{ Transactor}
 import cats.effect._
 import cats.effect.IO
-//import org.http4s.circe._
 
 
 object Main extends IOApp with StrictLogging {
@@ -56,7 +54,7 @@ object Main extends IOApp with StrictLogging {
   def httpRoutes(transactor: Transactor[cats.effect.IO]) = HttpRoutes.of[IO] {
       // LOGIN
     case req @ POST -> Root / "login" =>
-      req.as[UserInfo] flatMap( user => AuthService.login(user, transactor))
+      req.as[UserInfo] flatMap( user => AuthService.login2(user, transactor))
       // USER Routes
     case GET -> Root / "user" / username => UserService(User(1, username,"","",true,new Date())).getByUsername(username, transactor)
     case req @ POST -> Root / "user" =>
