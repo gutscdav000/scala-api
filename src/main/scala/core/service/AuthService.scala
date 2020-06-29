@@ -2,31 +2,22 @@ package core.service
 
 import java.text.SimpleDateFormat
 import java.util.Date
-
-import cats.Applicative
-import com.fasterxml.jackson.databind.ObjectMapper
 import scala.util.parsing.json._
 import org.json4s.Reader
-//import cats.data.{Kleisli, Reader}
-import cats.Id
 import cats.effect.IO
 import core.core.fp.Main.jwtGenerator
 import core.model.UserModel
 import core.serializer.{JwtObject, JwtSerializer}
 import doobie.util.transactor.Transactor
-import io.circe.Json
-import org.http4s.{Header, Request, Response, ResponseCookie}
+import org.http4s.{Header, Response}
 import org.http4s.Uri.UserInfo
 import org.http4s.dsl.io._
-import org.http4s.headers.Authorization
 import org.http4s.json4s.jackson.jsonOf
 import org.json4s.{DefaultFormats, JValue}
-import pdi.jwt.JwtClaim
-//
 import java.io.File
 import com.typesafe.config.ConfigFactory
 import pdi.jwt.{Jwt, JwtAlgorithm}
-import scala.util.{Success, Failure, Try}
+import scala.util.{Success, Try}
 
 
 trait JwtTokenGeneratorServices {
@@ -50,10 +41,6 @@ class JwtTokenGenerator extends JwtTokenGeneratorServices {
     val addMinuteTime = 1
     val expiry: Date = addMinutesToDate(addMinuteTime)
     val formattedExpiry: String = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(expiry)
-    println("------------------------")
-//    println(expiry.toInstant.toString)
-    println(formattedExpiry)
-    println("------------------------")
     Jwt.encode(s"""{"userId":"${userId.toString}","expiry":"${formattedExpiry}"}""", secret, JwtAlgorithm.HS256)
   }
 
