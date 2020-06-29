@@ -45,6 +45,7 @@ libraryDependencies ++= Seq(
   "org.json4s" % "json4s-native_2.13" % "3.7.0-M4",
   "com.pauldijou" % "jwt-core_2.13" % jwtVersion,
   "com.pauldijou" % "jwt-circe_2.13" % jwtVersion,
+  "org.scala-lang.modules" % "scala-parser-combinators_2.13" % "1.1.2",
   scalaTest
 )
 

@@ -61,8 +61,16 @@ object Main extends IOApp with StrictLogging {
       // USER Routes
     case req @ GET -> Root / "user" / username => {
       val header = req.headers.get(Authorization).getOrElse("")
-      val verif = jwtGenerator.tokenIsValid(header.toString)
-      UserService(User(1, username,"","",true,new Date())).getByUsername(username, transactor)
+      val valid = jwtGenerator.tokenIsValid(header.toString)
+      if(valid) {
+        UserService(User(1, username,"","",true,new Date())).getByUsername(username, transactor)
+      } else {
+        Forbidden("Please login")
+      }
+//      match {
+//        case true => UserService(User(1, username,"","",true,new Date())).getByUsername(username, transactor)
+//        case false => Forbidden("Please login")
+//      }
     }
     case req @ POST -> Root / "user" =>
       req.as[User] flatMap ( user => UserService(user).insert(transactor))

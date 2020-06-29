@@ -17,7 +17,7 @@ class JwtSerializer extends CustomSerializer[JwtObject](implicit format => ( {
     val userId = (jsonObj \ "userId").extract[Int]
     val roleId = (jsonObj \ "roleId").extract[Int]
     val expiry = (jsonObj \ "expiry").extract[String]
-    JwtObject(userId, roleId, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'").parse(expiry))
+    JwtObject(userId, roleId, new SimpleDateFormat("E MMM d HH:mm:ss z yyyy").parse(expiry))
 }, {
   case x: JwtObject =>
     ("id" -> x.userId) ~
