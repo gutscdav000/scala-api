@@ -6,7 +6,8 @@ import model.{Action, Debt, User}
 import org.http4s.Uri.UserInfo
 import org.http4s.headers.Authorization
 import serializer.{ActionSerializer, DebtSerializer, UserSerializer}
-import service.{ActionService, AuthService, DebtService, JwtTokenGenerator, UserService}
+import service.{ActionService, AuthService, DebtService, UserService}
+import utils.JwtTokenGenerator
 // libraries
 import java.util.Date
 import org.json4s.JsonAST.JValue
